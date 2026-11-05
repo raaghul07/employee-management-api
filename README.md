@@ -1,164 +1,65 @@
-
 # Employee Management REST API
 
-A RESTful backend application developed using Java 21, Spring Boot 4, Spring Data JPA, and PostgreSQL.
-
-This project demonstrates backend development, REST API design, database integration, dependency injection, validation, exception handling, and automated testing.
-
-## Tech Stack
-
-- Java 21
-- Spring Boot 4.1.2
-- Spring Data JPA and Hibernate
-- PostgreSQL 18
-- Maven
-- Docker
-- Swagger / OpenAPI
-- JUnit 5 and Mockito
+A secure, Dockerized REST API built with Java 21, Spring Boot, Spring Security, JWT authentication, and PostgreSQL.
 
 ## Features
 
-- Create new employees
-- Retrieve all employees
-- Retrieve employees by ID
-- Update employee information
-- Delete employees
-- Validate employee details
-- Prevent duplicate email addresses
-- Handle HTTP 404 and 409 errors
-- Interactive Swagger API documentation
-- Automated unit tests
+- Employee CRUD operations
+- JWT authentication with registration and login
+- Pagination and sorting
+- Department filtering and employee search
+- Input validation
+- PostgreSQL persistence
+- Docker Compose
+- Automated tests and GitHub Actions CI
 
-## Project Architecture
+## Tech Stack
 
-The application follows a layered architecture:
+Java 21, Spring Boot, Spring Security, PostgreSQL, Maven, Docker, JUnit, Mockito.
 
-```text
-Client / Swagger UI
-        |
-        v
-EmployeeController
-        |
-        v
-EmployeeService
-        |
-        v
-EmployeeRepository
-        |
-        v
-PostgreSQL Database
-```
+## Getting Started
 
-### Controller Layer
+Requirements: Docker Desktop and Docker Compose.
 
-Handles incoming HTTP requests and returns REST API responses.
+Set the environment variables:
 
-### Service Layer
+    export DB_PASSWORD=employee_pass
+    export JWT_SECRET=$(openssl rand -base64 32)
 
-Implements business logic, employee operations, and duplicate-email checks.
+Start the application:
 
-### Repository Layer
+    docker compose up -d --build
 
-Uses Spring Data JPA for database operations.
+API URL: http://localhost:8081
 
-### Model Layer
+## Authentication
 
-Defines the Employee entity and database mapping.
+Register: POST /api/auth/register
 
-## REST API Endpoints
+Login: POST /api/auth/login
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/employees | Get all employees |
-| GET | /api/employees/{id} | Get employee by ID |
-| POST | /api/employees | Create employee |
-| PUT | /api/employees/{id} | Update employee |
-| DELETE | /api/employees/{id} | Delete employee |
+Use the returned JWT token:
 
-## Example Request
+    Authorization: Bearer YOUR_TOKEN
 
-POST /api/employees
+## Employee Endpoints
 
-```json
-{
-  "name": "Alex Johnson",
-  "email": "alex.johnson@example.com",
-  "department": "Software Engineering"
-}
-```
+- GET /api/employees
+- POST /api/employees
+- GET /api/employees/{id}
+- PUT /api/employees/{id}
+- DELETE /api/employees/{id}
 
-Successful response: HTTP 201 Created.
+Employee endpoints require JWT authentication.
 
-## Running Locally
+## Testing
 
-### Prerequisites
+Run:
 
-- Java 21
-- Docker
-- Maven wrapper (included)
+    ./mvnw clean test
 
-### Start PostgreSQL
-
-```bash
-docker run --name employee-postgres \
-  -e POSTGRES_DB=employee_db \
-  -e POSTGRES_USER=employee_user \
-  -e POSTGRES_PASSWORD=employee_pass \
-  -p 5434:5432 \
-  -d postgres:18
-```
-
-If the container already exists:
-
-```bash
-docker start employee-postgres
-```
-
-### Configure Database Password
-
-```bash
-export DB_PASSWORD=employee_pass
-```
-
-### Start Spring Boot
-
-```bash
-./mvnw spring-boot:run
-```
-
-Application URL: http://localhost:8080
-
-## Swagger Documentation
-
-Access the interactive API documentation:
-
-http://localhost:8080/swagger-ui/index.html
-
-## Automated Testing
-
-Run all tests:
-
-```bash
-./mvnw clean test
-```
-
-The project includes tests for employee retrieval, creation, duplicate email handling, missing employee errors, and application startup.
-
-## HTTP Status Codes
-
-| Status | Description |
-|--------|-------------|
-| 200 | Successful GET or PUT |
-| 201 | Employee created |
-| 204 | Employee deleted |
-| 400 | Invalid request |
-| 404 | Employee not found |
-| 409 | Duplicate email |
+GitHub Actions automatically runs tests on pushes and pull requests.
 
 ## Author
 
 Raaghul Nataraj Kannan
-
-M.S. Data Science — Arizona State University
-
-Java Backend Development | Spring Boot | REST APIs | PostgreSQL
