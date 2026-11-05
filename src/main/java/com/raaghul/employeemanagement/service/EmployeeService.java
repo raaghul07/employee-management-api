@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
 @Service
 public class EmployeeService {
 
@@ -22,47 +24,95 @@ public class EmployeeService {
     }
 
     public Page<Employee> getAllEmployees(
-            int page, int size, String sortBy, String direction) {
+            int page,
+            int size,
+            String sortBy,
+            String direction,
+            String name,
+            String department) {
 
+        // Validate pagination
         if (page < 0 || size < 1 || size > 100) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Page must be >= 0 and size must be between 1 and 100");
         }
 
-        if (!java.util.Set.of("id", "name", "email", "department")
+        // Validate sorting field
+        if (!Set.of("id", "name", "email", "department")
                 .contains(sortBy)) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invalid sort field");
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sort field");
         }
 
+        // Validate sorting direction
         if (!direction.equalsIgnoreCase("asc")
                 && !direction.equalsIgnoreCase("desc")) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invalid sort direction");
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sort direction");
         }
 
+        // Configure sorting
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
 
+        // Configure pagination
         Pageable pageable = PageRequest.of(page, size, sort);
 
+        // Normalize optional search parameters
+        String searchName = name == null ? "" : name.trim();
+        String searchDepartment = department == null
+                ? ""
+                : department.trim();
+
+        boolean hasName = !searchName.isEmpty();
+        boolean hasDepartment = !searchDepartment.isEmpty();
+
+        // Search by both name and department
+        if (hasName && hasDepartment) {
+            return repository
+                    .findByNameContainingIgnoreCaseAndDepartmentContainingIgnoreCase(
+                            searchName,
+                            searchDepartment,
+                            pageable);
+        }
+
+        // Search by name only
+        if (hasName) {
+            return repository.findByNameContainingIgnoreCase(
+                    searchName,
+                    pageable);
+        }
+
+        // Filter by department only
+        if (hasDepartment) {
+            return repository.findByDepartmentContainingIgnoreCase(
+                    searchDepartment,
+                    pageable);
+        }
+
+        // No filters: return all employees
         return repository.findAll(pageable);
     }
 
     public Employee getEmployeeById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Employee not found"));
+                        HttpStatus.NOT_FOUND,
+                        "Employee not found"));
     }
 
     public Employee createEmployee(Employee employee) {
-        employee.setEmail(employee.getEmail().trim().toLowerCase());
+        employee.setEmail(
+                employee.getEmail().trim().toLowerCase());
 
         if (repository.findByEmail(employee.getEmail()).isPresent()) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "Email already exists");
+                    HttpStatus.CONFLICT,
+                    "Email already exists");
         }
 
         return repository.save(employee);
@@ -72,12 +122,16 @@ public class EmployeeService {
         Employee existing = getEmployeeById(id);
 
         existing.setName(updated.getName());
-        String newEmail = updated.getEmail().trim().toLowerCase();
+
+        String newEmail = updated.getEmail()
+                .trim()
+                .toLowerCase();
 
         repository.findByEmail(newEmail).ifPresent(other -> {
             if (!other.getId().equals(id)) {
                 throw new ResponseStatusException(
-                        HttpStatus.CONFLICT, "Email already exists");
+                        HttpStatus.CONFLICT,
+                        "Email already exists");
             }
         });
 

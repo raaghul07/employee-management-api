@@ -31,23 +31,37 @@ public class EmployeeController {
         );
     }
 
+    // Get employees with pagination, sorting and optional filters
     @GetMapping
     public Page<EmployeeResponseDTO> getAllEmployees(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "asc") String direction) {
+            @RequestParam(defaultValue = "asc") String direction,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String department) {
 
         return employeeService
-                .getAllEmployees(page, size, sortBy, direction)
+                .getAllEmployees(
+                        page,
+                        size,
+                        sortBy,
+                        direction,
+                        name,
+                        department
+                )
                 .map(this::toResponse);
     }
 
+    // Get employee by ID
     @GetMapping("/{id}")
-    public EmployeeResponseDTO getEmployeeById(@PathVariable Long id) {
+    public EmployeeResponseDTO getEmployeeById(
+            @PathVariable Long id) {
+
         return toResponse(employeeService.getEmployeeById(id));
     }
 
+    // Create employee
     @PostMapping
     public ResponseEntity<EmployeeResponseDTO> createEmployee(
             @Valid @RequestBody EmployeeRequestDTO request) {
@@ -60,10 +74,12 @@ public class EmployeeController {
 
         Employee saved = employeeService.createEmployee(employee);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
                 .body(toResponse(saved));
     }
 
+    // Update employee
     @PutMapping("/{id}")
     public EmployeeResponseDTO updateEmployee(
             @PathVariable Long id,
@@ -75,12 +91,18 @@ public class EmployeeController {
                 request.department()
         );
 
-        return toResponse(employeeService.updateEmployee(id, employee));
+        return toResponse(
+                employeeService.updateEmployee(id, employee)
+        );
     }
 
+    // Delete employee
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEmployee(
+            @PathVariable Long id) {
+
         employeeService.deleteEmployee(id);
+
         return ResponseEntity.noContent().build();
     }
 }

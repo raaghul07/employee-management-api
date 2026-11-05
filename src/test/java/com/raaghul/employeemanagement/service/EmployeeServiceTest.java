@@ -43,13 +43,17 @@ class EmployeeServiceTest {
                 0, 10, Sort.by("name").ascending());
 
         when(repository.findAll(pageable))
-                .thenReturn(new PageImpl<>(List.of(employee), pageable, 1));
+                .thenReturn(new PageImpl<>(
+                        List.of(employee), pageable, 1));
 
-        Page<Employee> result =
-                service.getAllEmployees(0, 10, "name", "asc");
+        Page<Employee> result = service.getAllEmployees(
+                0, 10, "name", "asc", null, null);
 
         assertEquals(1, result.getTotalElements());
-        assertEquals("John Smith", result.getContent().get(0).getName());
+        assertEquals(
+                "John Smith",
+                result.getContent().get(0).getName()
+        );
 
         verify(repository).findAll(pageable);
     }
@@ -62,7 +66,8 @@ class EmployeeServiceTest {
         when(repository.findAll(pageable))
                 .thenReturn(Page.empty(pageable));
 
-        service.getAllEmployees(0, 5, "id", "desc");
+        service.getAllEmployees(
+                0, 5, "id", "desc", null, null);
 
         verify(repository).findAll(pageable);
     }
@@ -71,34 +76,153 @@ class EmployeeServiceTest {
     void shouldRejectInvalidPageSize() {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.getAllEmployees(0, 0, "id", "asc")
+                () -> service.getAllEmployees(
+                        0, 0, "id", "asc", null, null)
         );
 
-        assertEquals(400, exception.getStatusCode().value());
+        assertEquals(
+                400,
+                exception.getStatusCode().value()
+        );
 
         verifyNoInteractions(repository);
     }
 
     @Test
+    void shouldSearchEmployeesByName() {
+        Employee employee = new Employee(
+                "Alex Johnson",
+                "alex@example.com",
+                "Engineering"
+        );
+
+        PageRequest pageable = PageRequest.of(
+                0, 10, Sort.by("id").ascending());
+
+        when(repository.findByNameContainingIgnoreCase(
+                "Alex", pageable))
+                .thenReturn(new PageImpl<>(
+                        List.of(employee), pageable, 1));
+
+        Page<Employee> result = service.getAllEmployees(
+                0, 10, "id", "asc", "Alex", null);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(
+                "Alex Johnson",
+                result.getContent().get(0).getName()
+        );
+
+        verify(repository)
+                .findByNameContainingIgnoreCase(
+                        "Alex", pageable);
+    }
+
+    @Test
+    void shouldFilterEmployeesByDepartment() {
+        Employee employee = new Employee(
+                "John Smith",
+                "john@example.com",
+                "Engineering"
+        );
+
+        PageRequest pageable = PageRequest.of(
+                0, 10, Sort.by("id").ascending());
+
+        when(repository.findByDepartmentContainingIgnoreCase(
+                "Engineering", pageable))
+                .thenReturn(new PageImpl<>(
+                        List.of(employee), pageable, 1));
+
+        Page<Employee> result = service.getAllEmployees(
+                0, 10, "id", "asc",
+                null, "Engineering");
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(
+                "Engineering",
+                result.getContent().get(0).getDepartment()
+        );
+
+        verify(repository)
+                .findByDepartmentContainingIgnoreCase(
+                        "Engineering", pageable);
+    }
+
+    @Test
+    void shouldSearchByNameAndDepartment() {
+        Employee employee = new Employee(
+                "Alex Johnson",
+                "alex@example.com",
+                "Engineering"
+        );
+
+        PageRequest pageable = PageRequest.of(
+                0, 10, Sort.by("name").ascending());
+
+        when(repository
+                .findByNameContainingIgnoreCaseAndDepartmentContainingIgnoreCase(
+                        "Alex", "Engineering", pageable))
+                .thenReturn(new PageImpl<>(
+                        List.of(employee), pageable, 1));
+
+        Page<Employee> result = service.getAllEmployees(
+                0, 10, "name", "asc",
+                "Alex", "Engineering");
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(
+                "Alex Johnson",
+                result.getContent().get(0).getName()
+        );
+
+        verify(repository)
+                .findByNameContainingIgnoreCaseAndDepartmentContainingIgnoreCase(
+                        "Alex", "Engineering", pageable);
+    }
+
+    @Test
+    void shouldIgnoreBlankSearchFilters() {
+        PageRequest pageable = PageRequest.of(
+                0, 10, Sort.by("id").ascending());
+
+        when(repository.findAll(pageable))
+                .thenReturn(Page.empty(pageable));
+
+        service.getAllEmployees(
+                0, 10, "id", "asc", "  ", "");
+
+        verify(repository).findAll(pageable);
+    }
+
+    @Test
     void shouldCreateEmployee() {
         Employee employee = new Employee(
-                "Jane Smith", "jane@example.com", "Finance");
+                "Jane Smith",
+                "jane@example.com",
+                "Finance"
+        );
 
         when(repository.findByEmail("jane@example.com"))
                 .thenReturn(Optional.empty());
 
-        when(repository.save(employee)).thenReturn(employee);
+        when(repository.save(employee))
+                .thenReturn(employee);
 
         Employee result = service.createEmployee(employee);
 
         assertEquals("Jane Smith", result.getName());
+
         verify(repository).save(employee);
     }
 
     @Test
     void shouldRejectDuplicateEmail() {
         Employee employee = new Employee(
-                "Jane Smith", "jane@example.com", "Finance");
+                "Jane Smith",
+                "jane@example.com",
+                "Finance"
+        );
 
         when(repository.findByEmail("jane@example.com"))
                 .thenReturn(Optional.of(employee));
@@ -108,9 +232,13 @@ class EmployeeServiceTest {
                 () -> service.createEmployee(employee)
         );
 
-        assertEquals(409, exception.getStatusCode().value());
+        assertEquals(
+                409,
+                exception.getStatusCode().value()
+        );
 
-        verify(repository, never()).save(any(Employee.class));
+        verify(repository, never())
+                .save(any(Employee.class));
     }
 
     @Test
@@ -123,6 +251,9 @@ class EmployeeServiceTest {
                 () -> service.getEmployeeById(999L)
         );
 
-        assertEquals(404, exception.getStatusCode().value());
+        assertEquals(
+                404,
+                exception.getStatusCode().value()
+        );
     }
 }
