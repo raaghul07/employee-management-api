@@ -1,12 +1,16 @@
+
 package com.raaghul.employeemanagement.service;
 
 import com.raaghul.employeemanagement.model.Employee;
 import com.raaghul.employeemanagement.repository.EmployeeRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import java.util.List;
 
 @Service
 public class EmployeeService {
@@ -17,8 +21,34 @@ public class EmployeeService {
         this.repository = repository;
     }
 
-    public List<Employee> getAllEmployees() {
-        return repository.findAll();
+    public Page<Employee> getAllEmployees(
+            int page, int size, String sortBy, String direction) {
+
+        if (page < 0 || size < 1 || size > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page must be >= 0 and size must be between 1 and 100");
+        }
+
+        if (!java.util.Set.of("id", "name", "email", "department")
+                .contains(sortBy)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Invalid sort field");
+        }
+
+        if (!direction.equalsIgnoreCase("asc")
+                && !direction.equalsIgnoreCase("desc")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Invalid sort direction");
+        }
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return repository.findAll(pageable);
     }
 
     public Employee getEmployeeById(Long id) {
@@ -34,6 +64,7 @@ public class EmployeeService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Email already exists");
         }
+
         return repository.save(employee);
     }
 
